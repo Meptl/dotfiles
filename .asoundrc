@@ -1,0 +1,71 @@
+# The sound card
+pcm.snd_card {
+  type hw
+  card 1
+  device 0
+  format S16_LE
+  rate 96000
+}
+
+defaults.pcm.rate_convert "samplerate_best"
+pcm.!default {
+  type plug
+  slave.pcm "duplex"
+}
+
+ctl.mixer0 {
+  type hw
+  card 1
+}
+
+# Split playback and capture devices to its respective mixer
+pcm.duplex {
+  type asym
+  playback.pcm "dmixer"
+  capture.pcm "dsnooper"
+}
+
+# dmix plugin needed for multiple sound source mixing
+pcm.dmixer {
+  type dmix
+  ipc_key 1024 # Some unique value
+  slave.pcm "snd_card"
+
+  # Only the first two channels are being used by dmix
+  bindings {
+    0 0
+    1 1
+  }
+}
+
+# dsnooper plugin needed for multiple capture device mixing
+pcm.dsnooper {
+  type dsnoop
+  ipc_key 2048 # Some unique value
+  slave.pcm "snd_card"
+
+  # Only the first two channels are being used by dsnoop
+  bindings {
+    0 0
+    1 1
+  }
+}
+
+# Plug wrapper over rawjack
+pcm.jack {
+  type plug
+  slave.pcm "rawjack"
+}
+
+# Defining a jack plugin interface
+pcm.rawjack {
+  type jack
+  playback_ports {
+    0 system:playback_1
+    1 system:playback_2
+  }
+  capture_ports {
+    0 system:capture_1
+    1 system:capture_2
+  }
+}
